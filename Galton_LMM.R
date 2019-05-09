@@ -9,7 +9,7 @@ colnames(inputData)[8]<-"response"
 colnames(inputData)[6]<-"gender"
 inputData[ ,6] <- as.numeric(inputData[,7]=="male")
 
-# fixed the random seed
+# fix the random seed
 set.seed(1)
 
 inputData <- inputData[,-7]
@@ -39,10 +39,12 @@ for (i in 1:n){
  K[i,i] <- 1;
 }
 
+# spectral decomposition
 eig <- eigen(K)
 s <- eig$values
 U <- eig$vectors
 
+# rotate the covariates and response using the eigenvector matrix
 y <- trainData$response
 X <- cbind(trainData$father,trainData$mother,trainData$midparentHeight,trainData$children,trainData$gender)
 UTy <- t(U)%*%y
@@ -53,8 +55,11 @@ for (i in 1:train.number){
 UXXU[,,i] <- crossprod(t(UTX[i,]), t(UTX[i,])) #so ugly
 }
 
+# log likelihood
 LL <- c()
 LL.opt <- -2000
+ 
+# one dimensional search to find the optimal delta
 for (delt in 1:50)
 {
  delta = exp(delt*0.1)
@@ -67,6 +72,8 @@ for (delt in 1:50)
   betay <- betay + t(t(UTX[i,]))*UTy[i]/(s[i]+delta)
  }
  beta <- solve(beta.half)%*%betay
+ 
+ # variance of random effects
  sigmau2 <- 0
  for (i in 1:train.number){
  sigmau2 <- sigmau2+(UTy[i]-UTX[i,]%*%beta)^2/(n*(s[i]+delta))
@@ -74,6 +81,8 @@ for (delt in 1:50)
  logS <- sum(log(s+delta))
  LL[delt] <- -0.5*(n*log(2*pi)+logS+n+n*log(sigmau2))
 }
+ 
+# find the best delta and compute the corresponding coefficients
 delt = which(LL==max(LL))[1]
 delta = exp(delt*0.1)
 delta.opt[temp] = delta
@@ -91,9 +100,13 @@ beta.half <- matrix(0,5,5)
  sigmau2 <- sigmau2+(UTy[i]-UTX[i,]%*%beta)^2/(n*(s[i]+delta))
  } 
 beta.opt[,temp] <- beta
+ 
+# apply the coefficients to predict the child height in the testing set
 y2 <- testData$response
 X2 <- cbind(testData$father,testData$mother,testData$midparentHeight,testData$children,testData$gender)
 y2.hat <- X2 %*% beta
+ 
+# get the mean square error
 mse[temp] <- mean((y2-y2.hat)^2)
 }
 mse;sqrt(mean(mse));
