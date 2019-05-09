@@ -1,26 +1,34 @@
+# import data
 library("HistData")
 attach(GaltonFamilies)
-# str(GaltonFamilies)
+str(GaltonFamilies)
 inputData <- data.frame(GaltonFamilies)
+
+# rename the columns
 colnames(inputData)[8]<-"response"
 colnames(inputData)[6]<-"gender"
 inputData[ ,6] <- as.numeric(inputData[,7]=="male")
+
+# fixed the random seed
 set.seed(1)
 
-#inputData <- inputData[,-c(4,7)]
 inputData <- inputData[,-7]
 inputData[ ,4] <- inputData[,5]*0+1
 
+# coefficient matrix 
 beta.opt <- matrix(0,5,50)
 delta.opt <- c()
 mse <- c()
-mse0 <- c()
-mse3 <- c()
+
+# try our method for 50 times
 for (temp in 1:50){
+
+# randomly choose 200 identities from the data set as testing set and the remained 734 as training set
 trainIndex <- sample(1:nrow(inputData),nrow(inputData)-200)
 trainData <- inputData[trainIndex, ]
 testData <- inputData[-trainIndex, ]
 
+# compute the genetic relationship matrix
 train.number <- length(trainData$family)
 family.unique <- unique(inputData$family)
 family.number <- length(family.unique)
